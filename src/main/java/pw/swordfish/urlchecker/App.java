@@ -3,9 +3,7 @@ package pw.swordfish.urlchecker;
 import pw.swordfish.http.*;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,46 +21,36 @@ public class App {
             usage();
 
 	/*
-	 * We setup a URL object to parse the hostname and
+     * We setup a URL object to parse the hostname and
 	 */
-        URL url = null;
-        try {
-            url = new URL(args[0]);
-        } catch (MalformedURLException ex) {
-            usage();
-        }
+        URL url = new URL(args[0]);
 
 	/*
-	 * we setup a socket so we can communicate with a server, and
+     * we setup a socket so we can communicate with a server, and
 	 * an http client that will handle the connections
 	 */
-        Socket socket = null;
+        Socket socket;
         HttpClient httpClient = null;
 
 	/*
-	 * now we construct an http client so we can talk to the server
+     * now we construct an http client so we can talk to the server
 	 */
         try {
             socket = new Socket(url.getHostname(), url.getPortNumber());
             httpClient = new HttpClient(socket);
-        } catch (MalformedURLException ex) {
-            System.err.println(ex.getMessage());
-            usage();
         } catch (IOException ex) {
             System.err.println(ex.getMessage());
             usage();
         }
 
 	/*
-	 * first we have to get the original url
+     * first we have to get the original url
 	 */
         String response = null;
         try {
+            assert httpClient != null;
             response = httpClient.send(new HttpRequest(new URL(url.getFullPath())));
         } catch (IOException ex) {
-            System.err.println(ex.getMessage());
-            usage();
-        } catch (MalformedHttpException ex) {
             System.err.println(ex.getMessage());
             usage();
         }
@@ -95,19 +83,17 @@ public class App {
                 try {
                     httpClient = new HttpClient(new Socket(url.getHostname(), url.getPortNumber()));
                     httpResponse = new HttpResponse(httpClient.send(new HttpRequest(new URL(url.getPath() + "/" + currentURL.getFullPath()))));
-                } catch (UnknownHostException ex) {
+                } catch (IOException ex) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (MalformedHttpException ex) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
+                assert httpResponse != null;
                 if (httpResponse.getStatusCode().equals(HttpStatusCodes.HTTPSTATUSOK))
                     System.out.println(urlPrefix + currentURL.getFullPath() + " ACTIVE " + httpResponse.getLastModified());
-                else if (httpResponse.getStatusCode().equals(HttpStatusCodes.HTTPSTATUSNOTFOUND)) {
+                else if (httpResponse.getStatusCode().equals(HttpStatusCodes.HTTPSTATUSNOTFOUND))
                     System.out.println(urlPrefix + currentURL.getFullPath() + " INACTIVE ");
-                }
             }
         }
     }
@@ -115,10 +101,9 @@ public class App {
     /**
      * Print the usage of the program and exit
      */
-    public static void usage() {
+    private static void usage() {
         System.err.println("Usage: url_checker <url>");
         System.err.println("	<url>: The url to check");
         System.exit(0);
     }
-
 }
